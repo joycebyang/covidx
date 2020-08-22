@@ -1,6 +1,5 @@
 import os
 
-import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
@@ -35,6 +34,6 @@ class DatasetGenerator(Dataset):
         if self.transform:
             image_data = self.transform(image_data)
 
-        image_label = torch.FloatTensor(np.array(self.csv_df.iloc[index, 1:]), dtype=np.float)
+        image_label = torch.FloatTensor(self.csv_df.iloc[index, 1:].tolist())
 
         return image_data, image_label
