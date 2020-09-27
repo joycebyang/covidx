@@ -7,14 +7,16 @@ import torchvision
 
 
 class DenseNetModel(nn.Module):
-    def __init__(self, arch, num_classes=3):
+    def __init__(self, arch,  freeze_pretrain_weights=True, num_classes=3):
         super(DenseNetModel, self).__init__()
         model_func = getattr(torchvision.models, arch)
         self.model = model_func(pretrained=True)
+        self.freeze_pretrain_weights = freeze_pretrain_weights
 
         # freezing the pretrained weights
-        for param in self.model.parameters():
-            param.requires_grad = False
+        if self.freeze_pretrain_weights:
+            for param in self.model.parameters():
+                param.requires_grad = False
 
         # check if classifier is Linear or Sequential Layer
         if isinstance(self.model.classifier, nn.Linear):
@@ -40,7 +42,12 @@ class DenseNetModel(nn.Module):
         return self.model(x)
 
     def get_optimizer_parameters(self):
-        return self.model.classifier.parameters()
+        if self.freeze_pretrain_weights:
+            return self.model.classifier.parameters()
+        else:
+            return self.model.parameters()
+
+
 
 
 class ResNetModel(nn.Module):
@@ -132,37 +139,37 @@ class EfficientNetModel(nn.Module):
         self.model.load_state_dict(new_state_dict, strict=False)
 
 
-def DenseNet121():
-    return DenseNetModel('densenet121')
+def DenseNet121(freeze_pretrain_weights):
+    return DenseNetModel('densenet121',freeze_pretrain_weights)
 
 
-def DenseNet169():
-    return DenseNetModel('densenet169')
+def DenseNet169(freeze_pretrain_weights):
+    return DenseNetModel('densenet169',freeze_pretrain_weights)
 
 
-def DenseNet201():
-    return DenseNetModel("densenet201")
+def DenseNet201(freeze_pretrain_weights):
+    return DenseNetModel("densenet201",freeze_pretrain_weights)
 
 
-def ResNet34():
-    return ResNetModel("resnet34")
+def ResNet34(freeze_pretrain_weights):
+    return ResNetModel("resnet34",freeze_pretrain_weights)
 
 
-def ResNet50():
-    return ResNetModel('resnet50')
+def ResNet50(freeze_pretrain_weights):
+    return ResNetModel('resnet50',freeze_pretrain_weights)
 
 
-def ResNet101():
-    return ResNetModel("resnet101")
+def ResNet101(freeze_pretrain_weights):
+    return ResNetModel("resnet101",freeze_pretrain_weights)
 
 
-def EfficientNet4():
-    return EfficientNetModel("efficientnet-b4")
+def EfficientNet4(freeze_pretrain_weights):
+    return EfficientNetModel("efficientnet-b4",freeze_pretrain_weights)
 
 
-def EfficientNet5():
-    return EfficientNetModel('efficientnet-b5')
+def EfficientNet5(freeze_pretrain_weights):
+    return EfficientNetModel('efficientnet-b5',freeze_pretrain_weights)
 
 
-def EfficientNet6():
-    return EfficientNetModel('efficientnet-b6')
+def EfficientNet6(freeze_pretrain_weights):
+    return EfficientNetModel('efficientnet-b6',freeze_pretrain_weights)

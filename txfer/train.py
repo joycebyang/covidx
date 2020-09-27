@@ -63,6 +63,9 @@ def get_input_args():
 
     parser.add_argument('--learning_rate', type=float, required=True, help='step size in optimizer')
 
+    parser.add_argument('--unfreeze_weights', action='store_true',
+                        help='when specified, pretrained weighted are unfrozen and trained')
+
     return parser.parse_args()
 
 
@@ -79,9 +82,9 @@ torch.backends.cudnn.deterministic = True
 
 
 # TODO: Build and train your network
-def load_pretrained_model(arch):
+def load_pretrained_model(arch, unfreeze_weights):
     model_func = getattr(models, arch)
-    model = model_func()
+    model = model_func(freeze_pretrain_weights=not unfreeze_weights)
     model.arch = arch
 
     return model
@@ -144,7 +147,8 @@ def save_checkpoint(checkpoint_path, model):
         'arch': model.arch,
         'metrics': model.metrics,
         'class_to_idx': class_to_idx,
-        'state_dict': model.state_dict()
+        'state_dict': model.state_dict(),
+        'freeze_pretrain_weights': model.freeze_pretrain_weights
     }
     torch.save(checkpoint, checkpoint_path)
     print('Saved the trained model: %s' % checkpoint_path)
@@ -154,6 +158,15 @@ def save_checkpoint(checkpoint_path, model):
 # TODO: perform sanity check and debugging, load checkpoint state_dict into pretrained model
 def load_checkpoint(checkpoint_path, device, pretrained_model):
     model_checkpoint = torch.load(checkpoint_path, map_location=torch.device(device))
+    freeze_pretrain_weights = True
+
+    if 'freeze_pretrain_weights' in model_checkpoint:
+        freeze_pretrain_weights = model_checkpoint['freeze_pretrain_weights']
+    if freeze_pretrain_weights != pretrained_model.freeze_pretrain_weights:
+        print('Freeze pretrain weights value mismatch: Checkpoint={} vs Pretrained={}'.format(
+            freeze_pretrain_weights,
+            pretrained_model.freeze_pretrain_weights))
+
     checkpoint_state_dict = model_checkpoint['state_dict']
     new_state_dict = OrderedDict()
 
@@ -397,15 +410,15 @@ def main():
             device = 'cuda'
 
     # TODO: define train function parameters
-    pretrained_model = load_pretrained_model(in_arg.arch)
+    pretrained_model = load_pretrained_model(in_arg.arch, in_arg.unfreeze_weights)
     pretrained_model.to(device)
 
     if in_arg.prior_checkpoint:
         load_checkpoint(in_arg.prior_checkpoint, device=device, pretrained_model=pretrained_model)
 
-    for name, param in pretrained_model.named_parameters():
-        if param.requires_grad:
-            print('Trainable Paramater Name: {}, Shape: {}'.format(name, param.data.shape))
+    # for name, param in pretrained_model.named_parameters():
+    #     if param.requires_grad:
+    #         print('Trainable Paramater Name: {}, Shape: {}'.format(name, param.data.shape))
 
     optimizer = optim.Adam(pretrained_model.get_optimizer_parameters(),
                            lr=in_arg.learning_rate, betas=(0.9, 0.999), eps=1e-08, weight_decay=1e-5)
@@ -429,6 +442,7 @@ def main():
     print('{} --> {}'.format(in_arg, checkpoint_prefix))
     print('Final Metrics: Average Precision={}, F1 Score= {}'
           .format(metrics['average_precision'], metrics['f1_scores']))
+
 
 if __name__ == "__main__":
     main()
