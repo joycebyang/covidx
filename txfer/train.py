@@ -23,7 +23,6 @@ from weighted_covid_sampler import WeightedCovidSampler
 
 mean = [0.485, 0.456, 0.406]
 std = [0.229, 0.224, 0.225]
-image_size = 224
 
 class_to_idx = {
     'normal': 0,
@@ -65,6 +64,8 @@ def get_input_args():
 
     parser.add_argument('--unfreeze_weights', action='store_true',
                         help='when specified, pretrained weighted are unfrozen and trained')
+
+    parser.add_argument('--image_size', type =int, default=224, help='image resolution')
 
     return parser.parse_args()
 
@@ -363,15 +364,15 @@ def main():
             transforms.ColorJitter(hue=.05, saturation=.05),
             transforms.RandomHorizontalFlip(),
             transforms.RandomRotation(15, resample=Image.BILINEAR),
-            transforms.RandomResizedCrop(image_size, scale=(0.9, 1.0)),
+            transforms.RandomResizedCrop(in_arg.image_size, scale=(0.9, 1.0)),
         ]),
         transforms.ToTensor(),
         transforms.Normalize(mean=mean, std=std)
     ])
 
     valid_transforms = transforms.Compose([
-        transforms.Resize(image_size),
-        transforms.CenterCrop(image_size),
+        transforms.Resize(in_arg.image_size),
+        transforms.CenterCrop(in_arg.image_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=mean, std=std)
     ])
